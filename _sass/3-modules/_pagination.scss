@@ -1,6 +1,6 @@
 .pagination {
   margin: 20px 0 40px;
-  padding: 40px 0;
+  padding: 40px 0 40px;
   text-align: center;
 
   @media only screen and (max-width: $mobile) {
@@ -18,10 +18,9 @@
   .disabled {
     display: inline-block;
     width: auto;
-    height: 50px;
-    line-height: 50px;
     font-size: 12px;
     letter-spacing: 1px;
+    padding: 15px 20px;
     text-transform: uppercase;
     transition: all .35s;
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, .15);
