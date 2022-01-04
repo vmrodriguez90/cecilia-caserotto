@@ -1,0 +1,22 @@
+.buttons {
+
+    .button-link {
+        display: block;
+        height: 50px;
+        line-height: 50px;
+        font-size: 12px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        letter-spacing: 3.5px;
+        transition: all .35s;
+        box-shadow: 0 1px 3px 0 $lightpink;
+        background: $darkpink;
+        color: $white;
+        font-weight: bold;
+        text-align: center;
+        margin: 20px 0;
+    }
+    .lates-title {
+        margin-bottom: 0;
+    }
+}

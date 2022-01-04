@@ -1,28 +1,32 @@
 #-------------------------------
 # General Site Settings
-title: Zolan
-logo: logo.svg # You can add own logo.
-description: Zolan is modern minimal theme for Jekyll
+title: Cecilia Caserotto
+logo: 4.png # You can add own logo.
+description: Yoga que cura al alma
 
 
 #-------------------------------
 # Author Settings
 author:
-  name: Alex Rodriguez
-  image: 01.jpg
-  say-hello: Hello, I’m <strong>Alex Rodriguez</strong>
-  bio: Designs, talks, and writes about <strong>web</strong>, <strong>ethics</strong>, <strong>privacy</strong>, and dev. I share design tutorials, free resources and inspiration. Loves <a href="#">music</a> & riding his bicycle.
+  name: Cecilia Caserotto
+  image: 3.png
+  say-hello: <strong>Hola, soy Ceci</strong></br> quiero invitarte a que vivas una hermosa experiencia de <strong>yoga en la playa</strong>
+  bio: Si querés relajarte y conectar con tus deseos te invito a que te sumes a nuestros encuentros. Son clases a la gorra, para todos los géneros y edades, y no hace falta que tengas ningún conocimiento previo. 
+  footer: Encontrame todos los días a las 19:30 hs. en El Náutico, parador <strong>AP SURF</strong>.
+
+
 
 
 #-------------------------------
 # Contact links
-twitter: https://twitter.com/ # Add your Twitter handle
 facebook: https://facebook.com/ # Add your Facebook handle
-dribbble: https://dribbble.com/ # Add your Dribbble handle
-instagram: https://instagram.com/ # Add your Instagram handle
-pinterest: https://pinterest.com/ # Add your Pinterest handle
+instagram: https://www.instagram.com/ceciliacaserotto/
 
-
+buttons:
+    - text: Reservas
+      link: https://form.com
+    - text: Seguime en Instagram 
+      link: https://www.instagram.com/ceciliacaserotto/
 #-------------------------------
 # Comment Section (Disqus)
 disqus-identifier: mr-brown # add your shortname for Disqus Comment. For example mr-brown
@@ -31,7 +35,7 @@ disqus-identifier: mr-brown # add your shortname for Disqus Comment. For example
 #-------------------------------
 # Instagram Feed
 instafeed: # To enable the instafeed, use the value true. To turn off use the value false.
-instagram-profile: artemsheludko_ # Add instagram username
+instagram-profile: ceciliacaserotto # Add instagram username
 
 
 #-------------------------------

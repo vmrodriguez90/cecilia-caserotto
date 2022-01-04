@@ -1,0 +1,14 @@
+<div class="container buttons">
+    <div class="row">
+        <div class="col col-12">
+            <h4 class="lates-title">Mas informacion</h4>
+        </div>
+    </div> 
+	<div class="row">
+		<div class="col col-12">
+            {% for p in site.data.settings.buttons %}
+                <a class="button-link" href="{{p.link}}">{{p.text}}</a>
+            {% endfor %}    
+    	</div>
+	</div>
+</div>

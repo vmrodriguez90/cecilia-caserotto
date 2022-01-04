@@ -2,22 +2,41 @@
 <div class="hero">
   <div class="container">
     <div class="row">
-      <div class="col col-6 col-t-12 last-item">
-        <div class="hero__content">
-          <h1 class="hero__title">{{ site.data.settings.author.say-hello }}</h1>
-          <p class="hero__subtitle">{{ site.data.settings.author.bio }}</p>
-          <div class="hero__social">
-            <span class="hero__social-title">Follow Me |</span>
-            {% include contact-link.html %}
+      <div class="col col-12 col-t-12">
+        <div class="hero__image">
+          <div class="yoga-image" style="background-image: url({{site.baseurl}}/images/{{site.data.settings.author.image}});">
+          &nbsp;
           </div>
         </div>
       </div>
-      <div class="col col-6 col-t-12">
+    </div>
+    <div class="row">
+      <div class="col col-12 col-t-12">
+        <div class="hero__content">
+          <h1 class="hero__title">{{ site.data.settings.author.say-hello }}</h1>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col col-9 col-t-9 ">
+        <div class="hero__content">
+          <p class="hero__subtitle">{{ site.data.settings.author.bio }}</p>
+        </div>
+      </div>
+      <div class="col col-3 col-t-3">
         <div class="hero__image">
-          <img src="{{site.baseurl}}/images/{{ site.data.settings.author.image }}" alt="">
+          <img src="{{site.baseurl}}/images/4.png" alt="">
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col col-12 col-t-12">
+        <div class="hero__content">
+          <h1 class="hero__subtitle">{{ site.data.settings.author.footer }}</h1>
         </div>
       </div>
     </div>
   </div>
+  
 </div>
 <!-- end hero -->

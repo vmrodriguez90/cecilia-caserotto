@@ -1,7 +1,7 @@
 .hero {
-  padding: 80px 0;
+  padding: 0;
   margin-bottom: 80px;
-  background: #f5f5f5;
+  background: $white;
 
   .last-item {
     display: flex;
@@ -10,18 +10,20 @@
   .hero__content {
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     width: 100%;
-    padding: 0 40px 0 0;
+    padding: 150px 40px 0 0;
     
     .hero__title {
-      font-size: 38px;
+      font-size: 18px;
+      line-height: 32px;
+      letter-spacing: 2px;
       font-weight: normal;
     }
 
     .hero__subtitle {
-      font-size: 18px;
-      line-height: 32px;
+      font-size: 14px;
+      line-height: 27px;
       letter-spacing: 0.5px;
     }
 
@@ -36,9 +38,13 @@
   }
 
   .hero__image {
-    img {
-      box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    .yoga-image {
+      height: 250px;
+      background-position: center 68%;
+      background-repeat: no-repeat;
+      background-size: 100%;
     }
+    
   }
 
   @media only screen and (max-width: $desktop) {
@@ -46,7 +52,7 @@
       padding: 0;
 
       .hero__subtitle {
-        font-size: 16px;
+        font-size: 14px;
         line-height: 28px;
       }
     }
@@ -76,6 +82,6 @@
   }
 
   @media only screen and (max-width: $mobile) {
-    padding: 40px 0;
+    padding: 0 0;
   }
 }
