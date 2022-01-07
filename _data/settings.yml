@@ -11,8 +11,8 @@ author:
   name: Cecilia Caserotto
   image: 3.png
   say-hello: <strong>Hola, soy Ceci</strong></br> y quiero invitarte a que vivas una hermosa experiencia de <strong>yoga en la playa</strong>
-  bio: Si querés relajarte y conectar con tus deseos te invito a que te sumes a nuestros encuentros. Son clases a la gorra, para todos los géneros y edades, y no hace falta que tengas ningún conocimiento previo. 
-  footer: Encontrame todos los días a las 19:30 hs. en El Náutico, parador <strong>AP SURF</strong>.
+  bio: Si querés relajarte y conectar con tus deseos te invito a que te sumes a nuestros encuentros. Son clases para todos los géneros y edades, y no hace falta que tengas ningún conocimiento previo. 
+  footer: Encontrame Lunes, Miercoles y Viernes 8 am en el parador <strong>Mentawaii Club Surf</strong> (Calle 21) o Todos los días a la gorra a las 19:30 hs. en El Náutico, parador <strong>AP SURF</strong>.
 
 
 
@@ -27,6 +27,8 @@ buttons:
       link: https://forms.gle/vNhX3BgzGzs9Yvxy6
     - text: Seguime en Instagram 
       link: https://www.instagram.com/ceciliacaserotto/
+    - text: Contactame por Whatsapp
+      link: http://wa.me/5491139295870
 #-------------------------------
 # Comment Section (Disqus)
 disqus-identifier: cecicaserotto # add your shortname for Disqus Comment. For example mr-brown
