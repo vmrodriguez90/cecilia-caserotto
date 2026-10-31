@@ -1,0 +1,20 @@
+{
+  "name": "consulta-patente",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Consulta deuda de patente (AGIP / ARBA) y multas de tránsito (CABA / PBA) de una patente argentina en los portales oficiales.",
+  "type": "module",
+  "bin": {
+    "consulta-patente": "./consulta-patente.mjs"
+  },
+  "scripts": {
+    "consultar": "node consulta-patente.mjs",
+    "test": "node test/simulacion.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.48.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
