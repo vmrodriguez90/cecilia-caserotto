@@ -1,170 +1,121 @@
-Zolan - Modern & Minimal Theme for Jekyll
-======
-Zolan is a minimal blog theme for Jekyll.
+# Consulta de patente: deuda y multas (CABA + Provincia de Buenos Aires)
 
-* * *
+Script que, a partir de una patente argentina, consulta en los **portales oficiales**:
 
-Table of Contents
------------------
-*   [Features](#features)
-*   [Demo](#demo)
-*   [Deployment](#deployment)
-*   [Posts](#posts)
-*   [Disqus Comments](#DisqusComments)
-*   [Instagram](#instagram)
-*   [Google Analytics](#GoogleAnalytics)
-*   [Update favicon](#UpdateFavicon)
-*   [Credits](#Credits)
-*   [Support](#Support)
+| Qué | Portal | ¿Captcha? |
+| --- | --- | --- |
+| Deuda de patente PBA (impuesto automotor) | ARBA, *Liquidación contado y sin trámite*: <http://www14.arba.gov.ar/Liquidacion/jsp/generarLiquidacion.jsp?imp=1> (respaldo: [Aviso de Deudas](https://app.arba.gov.ar/AvisoDeudas/?imp=1)) | No (el respaldo sí) |
+| Deuda de patente CABA | AGIP: <https://lb.agip.gob.ar/ConsultaPat/> | Sí |
+| Multas de tránsito CABA | <https://buenosaires.gob.ar/licenciasdeconducir/consulta-de-infracciones/?actas=transito> | Sí |
+| Multas de tránsito PBA | InfraccionesBA: <https://infraccionesba.gba.gob.ar/> → *Consultar/Pagar infracciones* (`/consulta-infraccion`) | Sí |
 
-* * *
+Al final arma un resumen corto (se lee bien en el celular) y guarda las capturas de cada portal.
 
-### Features
+## Requisitos
 
-* 100% responsive and clean theme
+- [Node.js](https://nodejs.org/) 18 o superior.
+- Google Chrome instalado. Si no lo tenés, después del `npm install` corré `npx playwright install chromium`.
 
-* Optimized for mobile devices
+## Instalación
 
-* Minimal design
+```bash
+git clone https://github.com/vmrodriguez90/cecilia-caserotto.git consulta-patente
+cd consulta-patente
+npm install
+```
 
-* Valid HTML5 code
+## Uso
 
-* Post sharing
+```bash
+node consulta-patente.mjs NQM444
+```
 
-* Subscription form
+La patente puede ir con o sin espacios o guiones (`nqm 444`, `AB-123-CD`).
 
-* Supports Disqus Comments
+1. ARBA se consulta directo, sin abrir ninguna pestaña.
+2. Se abre Chrome con una pestaña por cada portal que pide captcha, con la patente ya completada.
+3. El script te lleva de a una pestaña y te dice qué hacer en la terminal: tildás "No soy un robot" (y resolvés las imágenes si las pide) y el script aprieta *Consultar* o *Buscar* solo.
+4. Si un portal está caído o no te interesa, escribí `s` y Enter en la terminal para saltearlo.
+5. Al terminar se imprime el resumen y queda guardado en `resultados/<PATENTE>_<fecha>/`:
+   - `resumen.md`: el mismo resumen de la terminal.
+   - `datos.json`: todo lo que devolvió cada portal.
+   - `*.png`: captura de pantalla de cada resultado. *Ante cualquier duda, la captura es lo que vale.*
+   - `patente-pba-liquidacion.pdf`: si ARBA liquida deuda, el PDF que genera.
 
-* Instagram Feed
+### Opciones
 
-* Ionicons Icons
+| Opción | Para qué |
+| --- | --- |
+| `--solo patente-pba,multas-pba` | Consultar sólo algunas fuentes (`patente-caba`, `patente-pba`, `multas-caba`, `multas-pba`). |
+| `--minutos 5` | Tiempo máximo de espera por portal (default 5). |
+| `--anios 10` | Años hacia atrás para buscar cuotas vencidas en AGIP (default 10; el sitio por defecto muestra sólo desde el año pasado). |
+| `--salida carpeta` | Dónde guardar los resultados (default `./resultados`). |
+| `--navegador chromium` | Usar el Chromium de Playwright en vez de Chrome. |
+| `--cerrar` | Cerrar el navegador al terminar sin preguntar. |
 
-* Google Fonts
+Por ejemplo, para ver solamente la deuda de patente en provincia (no pide captcha):
 
+```bash
+node consulta-patente.mjs NQM444 --solo patente-pba --cerrar
+```
 
-* * *
+## Ejemplo de resumen
 
-### Demo
+```
+# Patente AB123CD
+Consulta: 31/10/2026 15:30
 
-Check the theme in action [Demo](https://zolan-jekyll.netlify.app/)
+## Deuda de patente
 
-![Main page preview](https://github.com/artemsheludko/zolan/blob/master/images/zolan-main-page.png?raw=true)
+### Deuda de patente CABA (AGIP)
+- Vehículo: FIAT CRONOS 1.3 · estado: ACTIVO
+- 3 cuotas impagas (vencidas o del mes) · total $ 65.000,50
+  - 10/03/2019 · 2019 cuota 03 · $ 15.000,50 · vencida  ⚠ +5 años: podría estar prescripta (orientativo)
+  - 12/06/2025 · 2025 cuota 06 · $ 20.000,00 · vencida
+  - 10/10/2026 · 2026 cuota 10 · $ 30.000,00 · del mes en curso
+- Además hay 1 cuota(s) a vencer por $ 31.000,00.
 
-The post page would look like this:
+### Deuda de patente Provincia de Buenos Aires (ARBA)
+- ✔ ARBA: "NO EXISTE DEUDA PARA EL CONTRIBUYENTE INGRESADO".
 
-![Post page preview](https://github.com/artemsheludko/zolan/blob/master/images/zolan-post.png?raw=true)
+## Multas de tránsito
 
-* * *
+### Multas CABA
+- ✔ El portal indica que no hay deuda/infracciones.
 
-### Deployment
+### Multas Provincia de Buenos Aires (InfraccionesBA)
+- 2 actas · total $ 218.765,40
+  - 01/06/2023 · causa 01-123-00456789-0 · Juzgado de Faltas de Pilar · $ 98.765,40 · Pendiente de pago  ⚠ +2 años: podría estar prescripta si es leve (orientativo)
+  - 15/09/2026 · causa 01-999-00000001-0 · $ 120.000,00 · En término
+```
 
-To run the theme locally, navigate to the theme directory and run `bundle install` to install the dependencies, then run `jekyll serve` or `bundle exec jekyll serve` to start the Jekyll server.
+(Los datos del ejemplo son ficticios.)
 
-I would recommend checking the [Deployment Methods](https://jekyllrb.com/docs/deployment-methods/) page on Jekyll website.
+## Reglas que respeta el script
 
-* * *
+- **No resuelve captchas.** Los resolvés vos; el script sólo detecta que ya están resueltos para apretar el botón.
+- **No paga ni inicia pagos**, ni carga datos de tarjeta. Sólo lee.
+- **Sólo usa los sitios oficiales** (`agip.gob.ar`, `arba.gov.ar`, `buenosaires.gob.ar`, `gba.gob.ar`).
 
-### Posts
+## Limitaciones a tener en cuenta
 
-To create a new post, you can create a new markdown file inside the \_posts directory by following the [recommended file structure](https://jekyllrb.com/docs/posts/#creating-post-files).
+- **AGIP** e **InfraccionesBA** devuelven JSON, así que el resumen es exacto. **Multas CABA** devuelve una página HTML: el script lee tablas y montos lo mejor que puede, pero conviene confirmar con la captura.
+- **ARBA** se consulta con la *liquidación contado y sin trámite*, que distingue "no existe deuda", "dominio inexistente" o genera un PDF con la liquidación. Deuda en juicio (apremio) o en plan de pagos puede no figurar ahí; para verla completa, entrá al [Aviso de Deudas](https://app.arba.gov.ar/AvisoDeudas/?imp=1). Si la liquidación no responde, el script usa el Aviso de Deudas (con captcha de imagen) como respaldo.
+- **La patente se paga donde está radicado el auto**: un auto de CABA aparece en AGIP y no en ARBA, y al revés. Uno de los dos va a decir que no lo encuentra, y es normal.
+- **InfraccionesBA pagina los resultados**: si hay más actas de las que entran en la primera página, el resumen te avisa y el resto lo ves en la pestaña.
+- **Municipios bonaerenses con sistema propio** (no integrados a InfraccionesBA) pueden tener actas que no aparecen acá.
+- **Prescripción**: las alertas son orientativas, no asesoramiento legal (multas CABA: 5 años; multas PBA: 2 años leves / 5 graves; patentes: 5 años). Planes de pago, apremios o actos judiciales la interrumpen.
+- **AGIP tiene un firewall** que rechaza navegadores automatizados desde servidores (data centers). Desde tu compu, con Chrome, no debería pasar; si pasa, el script lo avisa y sigue con los demás.
+- Los portales cambian. Si alguno deja de funcionar, el script te lo dice y sigue con los demás; la consulta a mano sigue disponible en la pestaña abierta.
 
-      ---
-      layout: post
-      title: Time to give gifts to everyone
-      date: 2018-08-23 16:04:00 +0300
-      image: 3.png
-      tags: Life
-      ---
+## Tests
 
+```bash
+npm test
+```
 
-You can set the tags and the post image.
+Prueba el flujo completo contra versiones **simuladas** de los portales (no sale nada a internet): captcha rechazado y reintento, auto no radicado, que no se envíe dos veces la consulta, lectura de cada respuesta y armado del resumen.
 
-Add post images to **/images/** directory.
+## Privacidad
 
-For tags, try to not add space between two words, for example, `Ruby on Rails`, could be something like (`ruby-on-rails`, `Ruby_on_Rails`, or `Ruby-on-Rails`).
-
-* * *
-
-### Disqus Comments
-
-Zolan Theme comes with Disqus comments enabled.
-
-Open `_data/settings.yml` file, and change the `mr-brown` value on line 26 with your [Disqus account shortname](https://help.disqus.com/customer/portal/articles/466208).
-
-      Comment Section (Disqus)
-      disqus-identifier: mr-brown # Add your shortname for Disqus Comment. For example mr-brown
-
-
-That’s all you need to setup Disqus from the theme side. If you get any issue regarding that comments are unable to load. First, make sure you have [registered your website with Disqus (Step 1)](https://help.disqus.com/customer/portal/articles/466182-publisher-quick-start-guide).
-
-And also check [Disqus troubleshooting guide](https://help.disqus.com/customer/portal/articles/472007-i-m-receiving-the-message-%22we-were-unable-to-load-disqus-%22) if you still have issues.
-
-* * *
-
-### Instagram
-
-The Instagram feed is working using [Instafeed.js](http://instafeedjs.com/) to show the photos.
-
-First, you will need to get your account `userId` and `accessToken` from the following URLs:
-
-*   userId: [http://codeofaninja.com/tools/find-instagram-user-id/](http://codeofaninja.com/tools/find-instagram-user-id/)
-*   accessToken: [instagram.pixelunion.net](http://instagram.pixelunion.net/)
-
-Second, open the `js/common.js` file and replace the `userId` and `accessToken` values.
-
-    var instagramFeed = new Instafeed({
-          get: 'user',
-          limit: 6,
-          resolution: 'standard_resolution',
-          userId: '8987997106',
-          accessToken: '8987997106.924f677.8555ecbd52584f41b9b22ec1a16dafb9',
-          template: ''
-    });
-
-
-Third, open the `_data/settings.yml` file and replace the `instafeed: false` on `instafeed: true` value.
-
-    # Instagram Feed
-    instafeed: false # To enable the instafeed, use the value true. To turn off use the value false.
-
-
-* * *
-
-### Google Analytics
-
-To integrate Google Analytics, open `_data/settings.yml`, and add your Google Analytics identifier.
-
-    # Google Analytics
-    google-analytics: # Add your identifier. For example UA-99631805-1
-
-
-* * *
-
-### Update favicon
-
-You can find the current favicon (favicon.ico) inside the theme root directory, just replace it with your new favicon.
-
-* * *
-
-### Credits
-
-I have used the following scripts, fonts or other files as listed.
-
-*   [Google Fonts](https://fonts.google.com/specimen/Nunito) (Roboto, Sans Serif).
-*   [Ionicons Icons](https://ionicons.com/)
-*   [FitVids.js](http://fitvidsjs.com/)
-*   [Medium’s Image Zoom](https://github.com/fat/zoom.js)
-*   [Instafeed.js](http://instafeedjs.com/)
-*   [jQuery.com](https://jquery.com/)
-*   Preview Images form [unsplash.com](https://unsplash.com/), [pexels.com](https://www.pexels.com/)
-
-* * *
-### License
-
-Mit License
-
-* * *
-
-### Support
-<p>If you like the themes that I create you can become my sponsor on <a href="https://www.patreon.com/artemsheludko" target="_blank">Patreon</a>.
-<p align="center"><b>Thank you for your support ❤️</b></p>
+El navegador usa un perfil propio en `~/.consulta-patente/perfil` (así los captchas suelen ser más fáciles las veces siguientes). Ahí quedan las cookies de estos portales; podés borrar esa carpeta cuando quieras. Los resultados quedan sólo en tu computadora, en la carpeta `resultados/`.

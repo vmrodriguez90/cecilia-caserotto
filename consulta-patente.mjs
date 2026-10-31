@@ -4,26 +4,32 @@
  *
  * Dada una patente argentina, consulta en los portales OFICIALES:
  *   - Deuda de patente CABA        (AGIP  - lb.agip.gob.ar)
- *   - Deuda de patente PBA         (ARBA  - app.arba.gov.ar, impuesto automotor)
+ *   - Deuda de patente PBA         (ARBA  - arba.gov.ar, impuesto automotor)
  *   - Multas de tránsito CABA      (buenosaires.gob.ar)
  *   - Multas de tránsito PBA       (InfraccionesBA - infraccionesba.gba.gob.ar)
  *
- * Todos los portales piden captcha. El script abre un navegador visible,
- * completa la patente y espera a que VOS resuelvas cada captcha. Nunca intenta
- * resolverlo, nunca paga ni inicia pagos: sólo lee lo que muestra cada portal.
+ * ARBA se consulta con su liquidación oficial sin captcha. Los otros portales
+ * piden captcha: el script abre un navegador visible, completa la patente y
+ * espera a que VOS resuelvas cada captcha. Nunca intenta resolverlo, nunca paga
+ * ni inicia pagos: sólo lee lo que muestra cada portal.
  *
- * Uso:  node consulta-patente.mjs AB123CD
+ * Uso:  node consulta-patente.mjs NQM444
  */
 import { chromium } from 'playwright';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
+import zlib from 'node:zlib';
 import readline from 'node:readline';
 import { parseArgs } from 'node:util';
 
 const URLS = {
   patenteCaba: 'https://lb.agip.gob.ar/ConsultaPat/',
   patentePba: 'https://app.arba.gov.ar/AvisoDeudas/?imp=1',
+  // "Liquidación contado y sin trámite" de ARBA: formulario oficial sin captcha.
+  arbaLiquidacionForm:
+    'http://www14.arba.gov.ar/Liquidacion/jsp/generarLiquidacion.jsp?imp=1&leyenda=Liquidacion+contado+sin+tramite&opcion=2',
+  arbaLiquidacion: 'http://www14.arba.gov.ar/Liquidacion/liquidacion.do',
   multasCaba: 'https://buenosaires.gob.ar/licenciasdeconducir/consulta-de-infracciones/?actas=transito',
   multasPba: 'https://infraccionesba.gba.gob.ar/consulta-infraccion',
 };
@@ -333,6 +339,95 @@ export function itemsMultasPba(actas, hoy = new Date()) {
     .sort((a, b) => (a.fecha ?? 0) - (b.fecha ?? 0));
 }
 
+/** Extrae (best effort) las líneas de texto de un PDF simple, sin dependencias. */
+export function textoDePdf(buf) {
+  const crudo = buf.toString('latin1');
+  const desescapar = (t) =>
+    t.replace(/\\([nrtbf()\\]|[0-7]{1,3})/g, (_, c) =>
+      /^[0-7]+$/.test(c) ? String.fromCharCode(parseInt(c, 8)) : ({ n: '\n', r: '\r', t: '\t', b: '', f: '' }[c] ?? c),
+    );
+  const lineas = [];
+  const re = /stream\r?\n/g;
+  let m;
+  while ((m = re.exec(crudo))) {
+    const ini = m.index + m[0].length;
+    const fin = crudo.indexOf('endstream', ini);
+    if (fin < 0) break;
+    re.lastIndex = fin;
+    let datos = buf.subarray(ini, fin);
+    try {
+      datos = zlib.inflateSync(datos);
+    } catch {
+      try {
+        datos = zlib.inflateSync(datos, { finishFlush: zlib.constants.Z_SYNC_FLUSH });
+      } catch {}
+    }
+    for (const bloque of datos.toString('latin1').match(/\bBT\b[\s\S]*?\bET\b/g) ?? []) {
+      const partes = [...bloque.matchAll(/\(((?:\\[\s\S]|[^\\)])*)\)/g)].map((x) => desescapar(x[1]));
+      const linea = partes.join('').replace(/\s+/g, ' ').trim();
+      if (linea) lineas.push(linea);
+    }
+  }
+  return lineas;
+}
+
+/**
+ * Interpreta la respuesta de la "Liquidación contado y sin trámite" de ARBA.
+ * Devuelve null si no la reconoce (entonces se usa el Aviso de Deudas con captcha).
+ */
+export function interpretarLiquidacionArba(tipoContenido, cuerpo) {
+  if (/pdf/i.test(tipoContenido) || cuerpo.subarray(0, 5).toString('latin1') === '%PDF-') {
+    const lineas = textoDePdf(cuerpo);
+    const relevantes = lineas.filter((l) => /\$\s?\d|\b\d{1,3}(\.\d{3})*,\d{2}\b|total/i.test(l));
+    return {
+      estado: 'ok',
+      tipo: 'generico',
+      fuente: 'PDF',
+      pdf: cuerpo,
+      encabezado: 'ARBA generó una liquidación: el auto tiene deuda de patente. El detalle está en el PDF.',
+      sinDeuda: false,
+      tablas: [],
+      lineas: relevantes.slice(0, 20),
+      texto: lineas.join('\n'),
+    };
+  }
+  const html = cuerpo.toString('latin1');
+  const limpiar = (h) =>
+    h
+      .replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/[ \t]+/g, ' ');
+  const aviso = html.match(/class="txtAdvertencia"[^>]*>([\s\S]*?)<\/span>/i);
+  const mensaje = aviso ? limpiar(aviso[1]).replace(/\s+/g, ' ').trim() : '';
+  if (/no existe deuda/i.test(mensaje)) {
+    return {
+      estado: 'ok',
+      tipo: 'items',
+      items: [],
+      sinDeuda: true,
+      textoSinDeuda: `ARBA: "${mensaje}"`,
+      extra:
+        'Es la liquidación al contado: deuda en juicio (apremio) o en plan de pagos podría no figurar acá. Para verla completa: Aviso de Deudas de ARBA.',
+    };
+  }
+  if (/dominio inexistente/i.test(mensaje)) {
+    return {
+      estado: 'ok',
+      tipo: 'no-aplica',
+      mensaje: `ARBA respondió "${mensaje}": el auto no está registrado en Provincia de Buenos Aires (si es de CABA u otra provincia, es normal).`,
+    };
+  }
+  if (mensaje) return { estado: 'ok', tipo: 'no-aplica', mensaje: `ARBA respondió: "${mensaje}"` };
+  // Sin mensaje: si es una página de liquidación con montos, la leemos genéricamente.
+  const texto = limpiar(html);
+  if (/liquidaci/i.test(texto) && /\$\s?\d|\d,\d{2}\b/.test(texto)) {
+    return { ...resultadoGenerico({ texto, tablas: [], libre: false }), fuente: 'HTML' };
+  }
+  return null;
+}
+
 // ───────────────────────────── portales ─────────────────────────────
 
 /** Deuda de patente CABA (AGIP). Respuestas en JSON. */
@@ -463,6 +558,28 @@ const patentePba = {
   id: 'patente-pba',
   titulo: 'Deuda de patente Provincia de Buenos Aires (ARBA)',
   instrucciones: 'Escribí el código de la imagen (respetando mayúsculas) y apretá el botón de consultar.',
+
+  /** Primero se usa la liquidación oficial sin captcha; si falla, el Aviso de Deudas (con captcha). */
+  async sinCaptcha(contexto, ctx) {
+    await contexto.request.get(URLS.arbaLiquidacionForm, { timeout: 30000 }); // abre la sesión
+    const resp = await contexto.request.get(
+      `${URLS.arbaLiquidacion}?imp=1&patente=${encodeURIComponent(ctx.patente)}&tipoLiquidacion=1`,
+      { timeout: 120000, maxRedirects: 0 },
+    );
+    if (resp.status() !== 200) return null;
+    const cuerpo = await resp.body();
+    const r = interpretarLiquidacionArba(resp.headers()['content-type'] || '', cuerpo);
+    if (!r) return null;
+    if (r.pdf) {
+      const archivo = 'patente-pba-liquidacion.pdf';
+      await guardar(ctx, archivo, r.pdf);
+      delete r.pdf;
+      r.encabezado += ` (${archivo})`;
+    } else {
+      await guardar(ctx, 'patente-pba.html', cuerpo);
+    }
+    return r;
+  },
 
   async completar(page, ctx) {
     if (!(await page.isVisible('#patente'))) await page.click('#btnAutomotor').catch(() => {});
@@ -645,9 +762,11 @@ function bloque(r) {
     } else if (r.lineas?.length) {
       for (const l of r.lineas.slice(0, 20)) L.push(`  - ${l}`);
     } else {
-      L.push('- No pude interpretar la respuesta automáticamente.');
+      L.push(r.fuente === 'PDF' ? '- Abrí el PDF para ver cuotas y montos.' : '- No pude interpretar la respuesta automáticamente.');
     }
-    if (!r.sinDeuda) L.push('- (Resumen leído del HTML del portal: confirmalo en la captura.)');
+    if (!r.sinDeuda) {
+      L.push(`- (Resumen leído del ${r.fuente ?? 'HTML'} del portal: confirmalo en ${r.captura ? 'la captura' : 'el archivo guardado'}.)`);
+    }
   }
   if (r.captura) L.push(`- Captura: ${r.captura}`);
   return L;
@@ -767,13 +886,32 @@ async function main() {
     process.exit(130);
   });
 
-  // Abrimos y completamos todas las pestañas en paralelo.
+  const porId = {};
+
+  // 1) Lo que se puede consultar sin captcha (no necesita pestaña).
+  for (const c of seleccion.filter((x) => x.sinCaptcha)) {
+    console.log(`\n▶ ${c.titulo}  (vía sin captcha)`);
+    try {
+      const r = await c.sinCaptcha(contexto, ctx);
+      if (r) {
+        porId[c.id] = r;
+        console.log('  ✔ Listo');
+        continue;
+      }
+      console.log('  Respuesta no reconocida: se consulta en el navegador.');
+    } catch (e) {
+      console.log(`  No respondió (${e.message.split('\n')[0]}): se consulta en el navegador.`);
+    }
+  }
+
+  // 2) El resto, en pestañas: se abren y completan en paralelo y después vamos de a una.
+  const enPestana = seleccion.filter((c) => !porId[c.id]);
   const paginas = [];
-  for (let i = 0; i < seleccion.length; i++) {
+  for (let i = 0; i < enPestana.length; i++) {
     paginas.push(i === 0 && contexto.pages()[0] ? contexto.pages()[0] : await contexto.newPage());
   }
   for (const [i, page] of paginas.entries()) {
-    const c = seleccion[i];
+    const c = enPestana[i];
     page.on('dialog', async (d) => {
       console.log(`  [${c.titulo}] El sitio dice: ${d.message()}`);
       await d.accept().catch(() => {});
@@ -784,15 +922,11 @@ async function main() {
       console.log(`  [${c.titulo}] Descargado: ${nombre}`);
     });
   }
-  const errPreparar = await Promise.all(
-    seleccion.map((c, i) => c.preparar(paginas[i], ctx).then(() => null, (e) => e)),
-  );
+  const errPreparar = await Promise.all(enPestana.map((c, i) => c.preparar(paginas[i], ctx).then(() => null, (e) => e)));
 
-  // Vamos portal por portal.
-  const resultados = [];
-  for (const [i, c] of seleccion.entries()) {
+  for (const [i, c] of enPestana.entries()) {
     const page = paginas[i];
-    console.log(`\n▶ ${c.titulo}  (${i + 1}/${seleccion.length})`);
+    console.log(`\n▶ ${c.titulo}  (captcha ${i + 1}/${enPestana.length})`);
     let r;
     let bloqueado = false;
     if (errPreparar[i]) {
@@ -835,8 +969,6 @@ async function main() {
         alSaltear = null;
       }
     }
-    r.id = c.id;
-    r.titulo = c.titulo;
     if (!page.isClosed()) {
       r.url = page.url();
       const captura = `${c.id}.png`;
@@ -846,9 +978,10 @@ async function main() {
       } catch {}
     }
     console.log(r.estado === 'ok' ? '  ✔ Listo' : `  ✖ ${r.mensaje}`);
-    resultados.push(r);
+    porId[c.id] = r;
   }
 
+  const resultados = seleccion.map((c) => ({ ...porId[c.id], id: c.id, titulo: c.titulo }));
   const resumen = armarResumen(patente, fecha, resultados, carpeta);
   await fs.writeFile(path.join(carpeta, 'resumen.md'), resumen + '\n');
   const sinTexto = resultados.map(({ texto: _t, ...resto }) => resto);
